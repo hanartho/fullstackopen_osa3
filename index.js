@@ -1,8 +1,10 @@
 const express = require("express");
+const morgan = require("morgan");
+const cors = require("cors");
 const app = express();
 
 // TESTI
-
+app.use(cors());
 app.use(express.json());
 
 let puhelinluettelo = [
@@ -27,6 +29,8 @@ let puhelinluettelo = [
     number: "44-5-3-566544-2",
   },
 ];
+
+app.use(morgan("tiny"));
 
 app.get("/api/persons", (req, res) => {
   res.json(puhelinluettelo);
