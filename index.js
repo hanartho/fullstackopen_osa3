@@ -34,12 +34,13 @@ let puhelinluettelo = [
 ];
 
 app.use(morgan("tiny"));
-
+/** 
 const unknownEndpoint = (req, res) => {
   res.status(404).send({ error: "unkown endpoint" });
 };
 
 app.use(unknownEndpoint);
+*/
 
 app.get("/api/persons", (req, res) => {
   Person.find({}).then((persons) => {
