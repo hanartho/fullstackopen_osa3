@@ -35,6 +35,12 @@ let puhelinluettelo = [
 
 app.use(morgan("tiny"));
 
+const unknownEndpoint = (req, res) => {
+  res.status(404).send({ error: "unkown endpoint" });
+};
+
+app.use(unknownEndpoint);
+
 app.get("/api/persons", (req, res) => {
   Person.find({}).then((persons) => {
     res.json(persons);
@@ -47,11 +53,16 @@ app.get("/info", (req, res) => {
   res.send(`<p>Phonkebook has info for ${amount} persons</p> <p> ${now} </p>`);
 });
 
-app.get("/api/persons/:id", (req, res) => {
-  Person.findById(req.params.id).then((person) => {
-    res.json(person);
-  });
-
+app.get("/api/persons/:id", (req, res, next) => {
+  Person.findById(req.params.id)
+    .then((person) => {
+      if (person) {
+        res.json(person);
+      } else {
+        res.status(404).end();
+      }
+    })
+    .catch((error) => next(error));
   /** 
   const id = Number(req.params.id);
   const person = puhelinluettelo.find((person) => person.id === id);
@@ -63,11 +74,18 @@ app.get("/api/persons/:id", (req, res) => {
   */
 });
 
-app.delete("/api/persons/:id", (req, res) => {
+app.delete("/api/persons/:id", (req, res, next) => {
+  Person.findByIdAndDelete(req.params.id)
+    .then((result) => {
+      res.status(204).end();
+    })
+    .catch((error) => next(error));
+  /** 
   const id = Number(req.params.id);
   puhelinluettelo = puhelinluettelo.filter((person) => person.id !== id);
 
   res.status(204).end;
+  */
 });
 
 const generateId = () => {
@@ -104,7 +122,19 @@ app.post("/api/persons", (req, res) => {
   });
 });
 
+const errorHandler = (error, req, res, next) => {
+  console.log(error.message);
+
+  if (error.name === "CastError") {
+    return res.status(400).send({ error: "malformatted id" });
+  }
+
+  next(error);
+};
+
 const PORT = process.env.PORT;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+app.use(errorHandler);
