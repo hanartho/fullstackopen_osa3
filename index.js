@@ -34,13 +34,6 @@ let puhelinluettelo = [
 ];
 
 app.use(morgan("tiny"));
-/** 
-const unknownEndpoint = (req, res) => {
-  res.status(404).send({ error: "unkown endpoint" });
-};
-
-app.use(unknownEndpoint);
-*/
 
 app.get("/api/persons", (req, res) => {
   Person.find({}).then((persons) => {
@@ -93,15 +86,14 @@ const generateId = () => {
   return Math.floor(Math.random() * 500);
 };
 
-app.post("/api/persons", (req, res) => {
+app.post("/api/persons", (req, res, next) => {
   const body = req.body;
   console.log(body.name);
 
-  if (!body.name) {
+  if (body.name === undefined) {
     return res.status(400).json({ error: "name missing" });
   }
-
-  if (!body.number) {
+  if (body.number === undefined) {
     return res.status(400).json({ error: "number missing" });
   }
 
@@ -118,9 +110,12 @@ app.post("/api/persons", (req, res) => {
   //puhelinluettelo = puhelinluettelo.concat(person);
   //res.json(person);
 
-  person.save().then((savedPerson) => {
-    res.json(savedPerson);
-  });
+  person
+    .save()
+    .then((savedPerson) => {
+      res.json(savedPerson);
+    })
+    .catch((error) => next(error));
 });
 
 const errorHandler = (error, req, res, next) => {
@@ -128,9 +123,15 @@ const errorHandler = (error, req, res, next) => {
 
   if (error.name === "CastError") {
     return res.status(400).send({ error: "malformatted id" });
+  } else if (error.name === "ValidationError") {
+    return res.status(400).json({ error: error.message });
   }
 
   next(error);
+};
+
+const unknownEndpoint = (req, res) => {
+  res.status(404).send({ error: "unkown endpoint" });
 };
 
 const PORT = process.env.PORT;
@@ -138,4 +139,5 @@ app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
 
+app.use(unknownEndpoint);
 app.use(errorHandler);
